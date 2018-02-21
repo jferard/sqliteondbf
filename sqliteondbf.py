@@ -15,7 +15,7 @@
    """
 
 # Notes:
-# * A part of this tool is inspired by https://github.com/olemb/dbfread/blob/master/examples/dbf2sqlite by Ole Martin Bjørndalen / UiT The Arctic University of Norway (under MIT licence)
+# * A part of this tool was inspired by https://github.com/olemb/dbfread/blob/master/examples/dbf2sqlite by Ole Martin Bjørndalen / UiT The Arctic University of Norway (under MIT licence)
 # * The example files are adapted from https://www.census.gov/data/tables/2016/econ/stc/2016-annual.html (I didn't find a copyright, but this is fair use I believe)
 
 import os
@@ -36,7 +36,7 @@ class _SQLiteConverter():
 
         for fpath in self.__dbf_files(dbf_path):
             _SQLiteConverterWorker(self.__logger, cursor, fpath, lowernames, encoding, char_decode_errors).import_dbf_file()
-            
+
         self.__connection.commit()
 
     def __dbf_files(self, dbf_path):
@@ -45,7 +45,7 @@ class _SQLiteConverter():
                 lext = os.path.splitext(name)[-1].lower()
                 if lext == ".dbf":
                     yield os.path.join(root, name)
-        
+
 class _SQLiteConverterWorker():
     __typemap = {
         'F': 'FLOAT',
@@ -58,24 +58,24 @@ class _SQLiteConverterWorker():
         'T': 'DATETIME',
         '0': 'INTEGER',
     }
-        
+
     def __init__(self, logger, cursor, fpath, lowernames, encoding, char_decode_errors):
         self.__logger = logger
         self.__cursor = cursor
         self.__fpath = fpath
         self.__dbf_table = DBF(fpath, lowernames=lowernames, encoding=encoding, char_decode_errors=char_decode_errors)
-   
+
     def import_dbf_file(self):
         self.__logger.info("import dbf file {}".format(self.__fpath))
         try:
             self.__add_sqlite_table()
         except UnicodeDecodeError as err:
             self.__logger.error("error {}".format(str(err)))
-        
+
     def __add_sqlite_table(self):
         self.__create_table()
         self.__populate_table()
-        
+
     def __create_table(self):
         sql = 'DROP TABLE IF EXISTS "{}"'.format(self.__dbf_table.name)
         self.__logger.debug("drop table SQL:\n{}".format(sql))
@@ -124,7 +124,7 @@ class _SQLiteExecutor():
     def __def(self, e, *args):
         import re
         from inspect import signature
-        
+
         self.__logger.debug("define function python code:\n{}".format(e))
         m = re.match("^def\s+(.+)\s*\(.*$", e, re.MULTILINE)
         name = m.group(1)
@@ -170,8 +170,8 @@ def _get_args():
     parser.add_argument("-q", "--quiet", action="store_true", help='enable quiet mode')
     parser.add_argument("-e", action="store", metavar='program', help='execute program')
 
-    return parser.parse_args()        
-        
+    return parser.parse_args()
+
 def main():
     args = _get_args()
     if args.quiet:
@@ -180,9 +180,9 @@ def main():
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.INFO)
-        
+
     logger = logging.getLogger("sqliteondbf")
-    
+
     if args.e and args.script:
         print ("Choose between -e and script")
 
@@ -200,10 +200,10 @@ def convert(dbf_path, sqlite_path, logger=logging.getLogger("sqliteondbf"), lowe
     connection = sqlite3.connect(sqlite_path)
     _SQLiteConverter(connection, logger).import_dbf(dbf_path, encoding=encoding, lowernames=lowernames, char_decode_errors=char_decode_errors)
     return connection
-    
+
 def execute(script, logger=logging.getLogger("sqliteondbf")):
     _SQLiteExecutor(script, logger).execute()
-   
+
 def export(cursor, csv_path, logger=logging.getLogger("sqliteondbf")):
     logger.info("export data to {}".format(csv_path))
     with open(csv_path, 'w', newline='', encoding='utf-8') as dest:
@@ -211,7 +211,7 @@ def export(cursor, csv_path, logger=logging.getLogger("sqliteondbf")):
         writer.writerow([description[0] for description in cursor.description])
         for row in cursor:
             writer.writerow(row)
-   
-  
+
+
 if __name__ == '__main__':
     main()
