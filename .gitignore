@@ -1,0 +1,8 @@
+*.pyc
+*.csv
+*.db
+*.egg-info
+
+# dirs
+__pycache__
+dist
