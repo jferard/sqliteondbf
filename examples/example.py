@@ -1,6 +1,6 @@
 # coding: utf-8
 """ sqliteondbf - SQLite on DBF
-      Copyright (C) 2016-2018 J. Férard <https://github.com/jferard>
+      Copyright (C) 2018 J. Férard <https://github.com/jferard>
    This file is part of sqliteondbf.
    sqliteondbf is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,41 +26,41 @@ logging.basicConfig(level=logging.INFO)
 connection = sqliteondbf.connect(".")
 
 cursor = connection.cursor()
-cursor.execute("""SELECT 
-    SUM(amount) 
+cursor.execute("""SELECT
+    SUM(amount)
 FROM "2016-stc-detailed"
 WHERE state_code = '0' AND item_code='T00' """)
 amount = next(cursor)
 
 print ("Total US: {}".format(amount[0]))
 
-cursor.execute("""SELECT 
+cursor.execute("""SELECT
     group_concat(item_name),
-    SUM(amount) 
+    SUM(amount)
 FROM "2016-stc-detailed" d
-LEFT JOIN item i 
+LEFT JOIN item i
 ON d.item_code = i.item_code
 WHERE state_code = '0' AND d.item_code<>'T00' AND d.item_code NOT LIKE 'TA%' """)
 amount = next(cursor)
 
 print ("Total US ({}): {}".format(*amount))
 
-cursor.execute("""SELECT 
+cursor.execute("""SELECT
     group_concat(item_name),
-    SUM(amount) 
+    SUM(amount)
 FROM "2016-stc-detailed" d
-LEFT JOIN item i 
+LEFT JOIN item i
 ON d.item_code = i.item_code
 WHERE state_code = '0' AND d.item_code IN ('T01', 'TA1', 'TA3', 'TA4', 'TA5') """)
 amount = next(cursor)
 
 print ("Total US ({}): {}".format(*amount))
 
-cursor.execute("""SELECT 
+cursor.execute("""SELECT
     group_concat(s.state_name),
-    SUM(amount) 
+    SUM(amount)
 FROM "2016-stc-detailed" d
-LEFT JOIN state s 
+LEFT JOIN state s
 ON d.state_code = s.state_code
 WHERE d.state_code <> '0' AND item_code='T00' """)
 amount = next(cursor)

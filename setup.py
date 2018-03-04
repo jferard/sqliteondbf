@@ -1,6 +1,6 @@
 # coding: utf-8
 """ sqliteondbf - SQLite on DBF
-      Copyright (C) 2016-2018 J. Férard <https://github.com/jferard>
+      Copyright (C) 2018 J. Férard <https://github.com/jferard>
    This file is part of sqliteondbf.
    sqliteondbf is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,8 +29,9 @@ setup(
     long_description=long_description,
     url='https://github.com/jferard/sqliteondbf',
     author='Julien Férard',
+    license='GPLv3',
 
-    classifiers=[ 
+    classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'Topic :: Database :: Front-Ends',
@@ -38,11 +39,12 @@ setup(
         'Programming Language :: Python :: 3',
     ],
 
-    keywords='sqlite dbf converter',
+    keywords='sqlite dbf converter sql script dbase dbf',
     install_requires=['dbfread>=2.0.7'],
     entry_points={
         'console_scripts': [
             'sqliteondbf=sqliteondbf:main',
         ],
     },
+    python_requires='>=3',
 )

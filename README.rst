@@ -38,6 +38,12 @@ It's also possible to execute an inline command (see below for the ``$convert`` 
 
     python sqliteondbf.py -e "$convert 'examples' example.db 'utf-8'"
 
+On Linux, please escape the ``$`` sign:
+
+.. code:: bash
+
+    python sqliteondbf.py -e "\$convert 'examples' example.db 'utf-8'"
+
 This will convert all the dbf files in the ``examples`` directory and subdirectories into a sqlite3 databas names ``example.db``.
 
 As a module

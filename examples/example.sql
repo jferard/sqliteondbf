@@ -1,5 +1,5 @@
 /* sqliteondbf - SQLite on DBF
-      Copyright (C) 2016-2018 J. Férard <https://github.com/jferard>
+      Copyright (C) 2018 J. Férard <https://github.com/jferard>
    This file is part of sqliteondbf.
    sqliteondbf is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
