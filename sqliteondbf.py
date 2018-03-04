@@ -102,7 +102,15 @@ class _SQLiteExecutor():
         else:
             self.__script = script.read()
         self.__logger = logger
-        self.__ex = {"connect":self.__connect, "convert":self.__convert, "export":self.__export, "def":self.__def, "print":self.__print, "view":self.__view}
+        self.__ex = {
+            "connect":self.__connect,
+            "convert":self.__convert,
+            "export":self.__export,
+            "def":self.__def,
+            "print":self.__print,
+            "view":self.__view,
+            "aggregate":self.__aggregate
+        }
 
     def __connect(self, e, t, fpath, encoding="cp850"):
         self.__logger.info("set source to {} ({})".format(fpath, t))
@@ -137,6 +145,21 @@ class _SQLiteExecutor():
         params = sig.parameters
 
         self.__connection.create_function(name, len(params), func)
+
+    def __aggregate(self, e, *args):
+        import re
+        from inspect import signature
+
+        self.__logger.debug("define aggregate function python code:\n{}".format(e))
+        m = re.match("^aggregate\s+(.+)\s*\(.*$", e, re.MULTILINE)
+        name = m.group(1)
+        o = compile("class"+e[len("aggregate"):], "self.__script", "exec")
+        exec(o)
+        clazz = locals()[name]
+        sig = signature(clazz.step)
+        params = sig.parameters
+
+        self.__connection.create_aggregate(name, len(params)-1, clazz)
 
     def __view(self, e, *args):
         self.__ensure_cursor()

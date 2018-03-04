@@ -115,6 +115,22 @@ To use a custom python function in the script:
         ...
         return ret
 
+``aggregate``
+-------------
+To use a custom python aggregate function in the script:
+
+.. code:: sql
+
+    $aggregate Class():
+        def __init__(self):
+            ...
+        def step(self, v):
+            ...
+        def finalize(self):
+            return ret
+
+Beware: do not put any blank line between methods.
+
 ``view``
 --------
 Print the result of the last select on the terminal:
@@ -139,4 +155,3 @@ TODO
 ====
 * A ``script`` instruction that stores the session
 * A ``dump`` instruction to dump the in memory database
-* An ``aggregate`` to create aggregate functions

@@ -43,22 +43,43 @@ ORDER BY CAST(state_code as INT), CAST(item_code as INT)
 $export "detailed.csv"
 
 SELECT
-    state_code,
-    my_uppercase(state_name),
+    item_code,
+    item_name,
     survey_yea,
     SUM(amount) as amount
 FROM detailed
-GROUP BY state_code, my_uppercase(state_name), survey_yea
+WHERE state_code != "0"
+GROUP BY item_code, item_name, survey_yea
 ORDER BY SUM(amount) DESC
 
-$export "by_state.csv"
+$export "by_item.csv"
 
-$print "The content of by_state.csv is:"
+$print "The content of by_item.csv is:"
 
 $view -1
 
-$print "The first 10 lines of by_state.csv are:"
+$print "The first 5 lines of by_item.csv are:"
 
-$view 10
+$view 5
+
+$aggregate Median():
+    def __init__(self):
+        self.__values = []
+    def step(self, value):
+        self.__values.append(value)
+    def finalize(self):
+        import statistics
+        return statistics.median(self.__values)
+
+SELECT
+    survey_yea,
+    median(amount) as median
+FROM detailed
+WHERE item_code == "T00" AND state_code != "0"
+GROUP BY survey_yea
+
+$print "The median of TOTAL TAXES is:"
+
+$view
 
 DROP VIEW IF EXISTS detailed
