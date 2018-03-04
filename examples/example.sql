@@ -30,11 +30,11 @@ SELECT
     d.item_code,
     my_uppercase(i.item_name) as item_name,
     d.amount
-FROM 
-    "2016-stc-detailed" d 
-    LEFT JOIN state s 
+FROM
+    "2016-stc-detailed" d
+    LEFT JOIN state s
     ON d.state_code = s.state_code
-    LEFT JOIN item i 
+    LEFT JOIN item i
     ON d.item_code = i.item_code
 
 SELECT * FROM detailed
@@ -42,7 +42,7 @@ ORDER BY CAST(state_code as INT), CAST(item_code as INT)
 
 $export "detailed.csv"
 
-SELECT 
+SELECT
     state_code,
     my_uppercase(state_name),
     survey_yea,
@@ -52,5 +52,7 @@ GROUP BY state_code, my_uppercase(state_name), survey_yea
 ORDER BY SUM(amount) DESC
 
 $export "by_state.csv"
+
+$print
 
 DROP VIEW IF EXISTS detailed

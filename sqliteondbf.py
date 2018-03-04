@@ -102,7 +102,7 @@ class _SQLiteExecutor():
         else:
             self.__script = script.read()
         self.__logger = logger
-        self.__ex = {"connect":self.__connect, "convert":self.__convert, "export":self.__export, "def":self.__def}
+        self.__ex = {"connect":self.__connect, "convert":self.__convert, "export":self.__export, "def":self.__def, "print":self.__print}
 
     def __connect(self, e, t, fpath, encoding="cp850"):
         self.__logger.info("set source to {} ({})".format(fpath, t))
@@ -119,6 +119,8 @@ class _SQLiteExecutor():
         self.__cursor = self.__connection.cursor()
 
     def __export(self, e, csv_path):
+        self.__ensure_cursor()
+
         export(self.__cursor, csv_path, self.__logger)
 
     def __def(self, e, *args):
@@ -135,6 +137,25 @@ class _SQLiteExecutor():
         params = sig.parameters
 
         self.__connection.create_function(name, len(params), func)
+
+    def __print(self, e, *args):
+        self.__ensure_cursor()
+
+        if args:
+            limit = args[0]
+        else:
+            limit = 100
+
+        column_names = [description[0] for description in self.__cursor.description]
+        rows = [r for _, r in zip(range(limit), self.__cursor)]
+        ws = [max(len(str(y)) for y in col) for col in zip(column_names, *rows)]
+        for zs in (column_names, *rows):
+            print ("\t".join([str(z).rjust(w) if type(z) in (int, float) else str(z).ljust(w) for z, w in zip(zs, ws)]))
+
+    def __ensure_cursor(self):
+        if self.__cursor_fetched:
+            self.__cursor.execute(self.__last_query)
+        self.__cursor_fetched = True
 
     def execute(self):
         expressions = [e.strip() for e in self.__script.split("\n\n")]
@@ -153,9 +174,13 @@ class _SQLiteExecutor():
                         self.__logger.error(msg)
                         raise Exception(msg)
                 else:
-                    self.__logger.debug("execute sql:\n{}".format(e))
-                    self.__cursor.execute(e)
-                    self.__logger.debug("rowcount: {}".format(self.__cursor.rowcount))
+                    if e.startswith("/*") or e.startswith("--"):
+                        self.__logger.debug("ignore:\n{}".format(e))
+                    else:
+                        self.__last_query, self.__cursor_fetched = e, False
+                        self.__logger.debug("execute sql:\n{}".format(e))
+                        self.__cursor.execute(e)
+                        self.__logger.debug("rowcount: {}".format(self.__cursor.rowcount))
 
     def __get_args(self, e):
         import shlex
