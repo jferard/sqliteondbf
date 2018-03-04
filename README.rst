@@ -12,6 +12,15 @@ Notes:
 * A part of this tool was inspired by https://github.com/olemb/dbfread/blob/master/examples/dbf2sqlite by Ole Martin Bjørndalen / UiT The Arctic University of Norway (under MIT licence)
 * The example files are adapted from https://www.census.gov/data/tables/2016/econ/stc/2016-annual.html (I didn't find a copyright, but this is fair use I believe)
 
+------------
+Installation
+------------
+Windows/Linux:
+
+.. code:: bash
+
+    [sudo] python setup.py install
+
 -------
 Example
 -------
@@ -21,7 +30,7 @@ In the ``sqliteondbf`` directory:
 
 .. code:: bash
 
-    python sqliteondbf -v examples/example.sql
+    python sqliteondbf.py -v examples/example.sql
 
 It's also possible to execute an inline command (see below for the ``$convert`` command):
 
