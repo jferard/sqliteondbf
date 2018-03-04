@@ -158,8 +158,3 @@ Print a string or a list of string on the terminal
 .. code:: sql
 
     $print something
-
-TODO
-====
-* A ``script`` instruction that stores the session
-* A ``dump`` instruction to dump the in memory database
