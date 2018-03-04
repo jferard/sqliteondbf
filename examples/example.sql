@@ -53,6 +53,12 @@ ORDER BY SUM(amount) DESC
 
 $export "by_state.csv"
 
-$print
+$print "The content of by_state.csv is:"
+
+$view -1
+
+$print "The first 10 lines of by_state.csv are:"
+
+$view 10
 
 DROP VIEW IF EXISTS detailed

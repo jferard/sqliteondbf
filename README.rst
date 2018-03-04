@@ -103,6 +103,8 @@ Save the result of the last select to a csv file:
 
     $export file.csv
 
+If the result was already fetched, the query is rerun.
+
 ``def``
 -------
 To use a custom python function in the script:
@@ -113,9 +115,28 @@ To use a custom python function in the script:
         ...
         return ret
 
+``view``
+--------
+Print the result of the last select on the terminal:
+
+.. code:: sql
+
+    $view [limit]
+
+An optional argument ``limit`` sets the maximum number of rows to display. If ``limit`` is omitted, the its value is ``100``. If ``limit == -1``, then no limit is set.
+
+If the result was already fetched, the query is rerun.
+
+``print``
+---------
+Print a string or a list of string on the terminal
+
+.. code:: sql
+
+    $print something
+
 TODO
 ====
 * A ``script`` instruction that stores the session
-* A ``print`` instruction that prints the result of the last query
 * A ``dump`` instruction to dump the in memory database
 * An ``aggregate`` to create aggregate functions

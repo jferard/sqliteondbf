@@ -102,7 +102,7 @@ class _SQLiteExecutor():
         else:
             self.__script = script.read()
         self.__logger = logger
-        self.__ex = {"connect":self.__connect, "convert":self.__convert, "export":self.__export, "def":self.__def, "print":self.__print}
+        self.__ex = {"connect":self.__connect, "convert":self.__convert, "export":self.__export, "def":self.__def, "print":self.__print, "view":self.__view}
 
     def __connect(self, e, t, fpath, encoding="cp850"):
         self.__logger.info("set source to {} ({})".format(fpath, t))
@@ -138,19 +138,17 @@ class _SQLiteExecutor():
 
         self.__connection.create_function(name, len(params), func)
 
-    def __print(self, e, *args):
+    def __view(self, e, *args):
         self.__ensure_cursor()
 
         if args:
-            limit = args[0]
+            limit = int(args[0])
         else:
             limit = 100
+        view(self.__cursor, limit, self.__logger)
 
-        column_names = [description[0] for description in self.__cursor.description]
-        rows = [r for _, r in zip(range(limit), self.__cursor)]
-        ws = [max(len(str(y)) for y in col) for col in zip(column_names, *rows)]
-        for zs in (column_names, *rows):
-            print ("\t".join([str(z).rjust(w) if type(z) in (int, float) else str(z).ljust(w) for z, w in zip(zs, ws)]))
+    def __print(self, e, *args):
+        print (*args)
 
     def __ensure_cursor(self):
         if self.__cursor_fetched:
@@ -236,6 +234,19 @@ def export(cursor, csv_path, logger=logging.getLogger("sqliteondbf")):
         writer.writerow([description[0] for description in cursor.description])
         for row in cursor:
             writer.writerow(row)
+
+def view(cursor, limit, logger=logging.getLogger("sqliteondbf")):
+    logger.debug("display data on terminal")
+    column_names = [description[0] for description in cursor.description]
+    if limit >= 0:
+        rows = [r for _, r in zip(range(limit), cursor)]
+    else:
+        rows = [r for r in cursor]
+    ws = [max(len(str(y)) for y in col) for col in zip(column_names, *rows)]
+    for zs in (column_names, *rows):
+        print ("\t".join([str(z).rjust(w) if type(z) in (int, float) else str(z).ljust(w) for z, w in zip(zs, ws)]))
+    if cursor.fetchone():
+        print ("...")
 
 
 if __name__ == '__main__':
