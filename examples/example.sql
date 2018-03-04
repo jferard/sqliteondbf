@@ -82,4 +82,6 @@ $print "The median of TOTAL TAXES is:"
 
 $view
 
+$dump base.dump
+
 DROP VIEW IF EXISTS detailed

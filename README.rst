@@ -131,6 +131,14 @@ To use a custom python aggregate function in the script:
 
 Beware: do not put any blank line between methods.
 
+``dump``
+--------
+Make a dump of the base:
+
+.. code:: sql
+
+    $dump fname.sql
+
 ``view``
 --------
 Print the result of the last select on the terminal:

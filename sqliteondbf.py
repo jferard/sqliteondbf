@@ -109,7 +109,8 @@ class _SQLiteExecutor():
             "def":self.__def,
             "print":self.__print,
             "view":self.__view,
-            "aggregate":self.__aggregate
+            "aggregate":self.__aggregate,
+            "dump":self.__dump,
         }
 
     def __connect(self, e, t, fpath, encoding="cp850"):
@@ -172,6 +173,11 @@ class _SQLiteExecutor():
 
     def __print(self, e, *args):
         print (*args)
+
+    def __dump(self, e, *args):
+        with open(args[0], 'w', encoding="utf-8", newline="\n") as f:
+            for line in self.__connection.iterdump():
+                f.write(line+"\n")
 
     def __ensure_cursor(self):
         if self.__cursor_fetched:
