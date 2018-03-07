@@ -15,12 +15,11 @@
 
 -- Note: The example files are adapted from https://www.census.gov/data/tables/2016/econ/stc/2016-annual.html (I didn't find a copyright, but this is fair use I believe)
 
-$connect dbf "." "utf-8"
-
+$connect dbf "." "utf-8";
 $def my_uppercase(v):
-    return v.upper()
+    return v.upper();
 
-DROP VIEW IF EXISTS detailed
+DROP VIEW IF EXISTS detailed;
 
 CREATE VIEW detailed AS
 SELECT
@@ -35,12 +34,12 @@ FROM
     LEFT JOIN state s
     ON d.state_code = s.state_code
     LEFT JOIN item i
-    ON d.item_code = i.item_code
+    ON d.item_code = i.item_code;
 
 SELECT * FROM detailed
-ORDER BY CAST(state_code as INT), CAST(item_code as INT)
+ORDER BY CAST(state_code as INT), CAST(item_code as INT);
 
-$export "detailed.csv"
+$export "detailed.csv";
 
 SELECT
     item_code,
@@ -50,38 +49,37 @@ SELECT
 FROM detailed
 WHERE state_code != "0"
 GROUP BY item_code, item_name, survey_yea
-ORDER BY SUM(amount) DESC
+ORDER BY SUM(amount) DESC;
 
-$export "by_item.csv"
+$export "by_item.csv";
 
-$print "The content of by_item.csv is:"
+$print "The content of by_item.csv is:";
+$view -1;
 
-$view -1
-
-$print "The first 5 lines of by_item.csv are:"
-
-$view 5
+$print "The first 5 lines of by_item.csv are:";
+$view 5;
 
 $aggregate Median():
     def __init__(self):
         self.__values = []
+
     def step(self, value):
         self.__values.append(value)
+
     def finalize(self):
         import statistics
-        return statistics.median(self.__values)
+        return statistics.median(self.__values);
 
 SELECT
     survey_yea,
     median(amount) as median
 FROM detailed
 WHERE item_code == "T00" AND state_code != "0"
-GROUP BY survey_yea
+GROUP BY survey_yea;
 
-$print "The median of TOTAL TAXES is:"
+$print "The median of TOTAL TAXES is:";
+$view;
 
-$view
-
-$dump base.dump
+$dump base.dump;
 
 DROP VIEW IF EXISTS detailed

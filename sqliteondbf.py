@@ -113,6 +113,34 @@ class _SQLiteExecutor():
             "dump":self.__dump,
         }
 
+    def execute(self):
+        for e in _SemicolonSplitter().split(self.__script):
+            e = e.strip()
+            if not e:
+                continue
+
+            if e.startswith("$"):
+                args = self.__get_args(e[1:]) # get arg
+                self.__ex[args[0]](e[1:], *(args[1:]))
+            else:
+                try:
+                    self.__cursor
+                except:
+                    if e.startswith("/*") or e.startswith("--"):
+                        self.__logger.debug("ignore:\n{}".format(e))
+                    else:
+                        msg = "open a data source before executing instructions!! {} ignored".format(e)
+                        self.__logger.error(msg)
+                        raise Exception(msg)
+                else:
+                    if e.startswith("/*") or e.startswith("--"):
+                        self.__logger.debug("ignore:\n{}".format(e))
+                    else:
+                        self.__last_query, self.__cursor_fetched = e, False
+                        self.__logger.debug("execute sql:\n{}".format(e))
+                        self.__cursor.execute(e)
+                        self.__logger.debug("rowcount: {}".format(self.__cursor.rowcount))
+
     def __connect(self, e, t, fpath, encoding="cp850"):
         self.__logger.info("set source to {} ({})".format(fpath, t))
         if t == "sqlite":
@@ -184,31 +212,6 @@ class _SQLiteExecutor():
             self.__cursor.execute(self.__last_query)
         self.__cursor_fetched = True
 
-    def execute(self):
-        expressions = [e.strip() for e in self.__script.split("\n\n")]
-        for e in expressions:
-            if e.startswith("$"):
-                args = self.__get_args(e[1:]) # get arg
-                self.__ex[args[0]](e[1:], *(args[1:]))
-            else:
-                try:
-                    self.__cursor
-                except:
-                    if e.startswith("/*") or e.startswith("--"):
-                        self.__logger.debug("ignore:\n{}".format(e))
-                    else:
-                        msg = "open a data source before executing instructions!! {} ignored".format(e)
-                        self.__logger.error(msg)
-                        raise Exception(msg)
-                else:
-                    if e.startswith("/*") or e.startswith("--"):
-                        self.__logger.debug("ignore:\n{}".format(e))
-                    else:
-                        self.__last_query, self.__cursor_fetched = e, False
-                        self.__logger.debug("execute sql:\n{}".format(e))
-                        self.__cursor.execute(e)
-                        self.__logger.debug("rowcount: {}".format(self.__cursor.rowcount))
-
     def __get_args(self, e):
         import shlex
         return shlex.split(e)
@@ -277,6 +280,84 @@ def view(cursor, limit, logger=logging.getLogger("sqliteondbf")):
     if cursor.fetchone():
         print ("...")
 
+class _SemicolonSplitter():
+    NONE = 0
+
+    OPEN_BLOCK_COMMENT_C1 = 10
+    BLOCK_COMMENT_OPENED = 11
+    BLOCK_COMMENT_OPENED_CLOSE_BLOCK_COMMENT_C1 = 12
+
+    OPEN_LINE_COMMENT_C1 = 20
+    OPEN_LINE_COMMENT_C1 = 21
+    LINE_COMMENT_OPENED = 22
+
+    DOUBLE_QUOTED = 30
+    DOUBLE_QUOTED_ESCAPE = 31
+
+    SINGLE_QUOTED = 40
+    SINGLE_QUOTED_ESCAPE = 41
+
+    def __init__(self, block_comment=("/*", "*/"), line_comment="--", splitter=";"):
+        self.__block_comment = block_comment
+        self.__line_comment = line_comment
+        self.__splitter = splitter
+
+    def split(self, script):
+        cur = []
+        state = _SemicolonSplitter.NONE
+        for c in script:
+            if state == _SemicolonSplitter.NONE:
+                if c == self.__block_comment[0][0]:
+                    state = _SemicolonSplitter.OPEN_BLOCK_COMMENT_C1
+                elif c == self.__line_comment[0]:
+                    state = _SemicolonSplitter.OPEN_LINE_COMMENT_C1
+                elif c == "\"":
+                    state = _SemicolonSplitter.DOUBLE_QUOTED
+                elif c == "'":
+                    state = _SemicolonSplitter.SINGLE_QUOTED
+                elif c == self.__splitter:
+                    yield "".join(cur)
+                    cur = []
+                    continue
+            elif state == _SemicolonSplitter.OPEN_BLOCK_COMMENT_C1:
+                if c == self.__block_comment[0][1]:
+                    state = _SemicolonSplitter.BLOCK_COMMENT_OPENED
+                else:
+                    state = _SemicolonSplitter.NONE
+            elif state == _SemicolonSplitter.BLOCK_COMMENT_OPENED:
+                if c == self.__block_comment[1][0]:
+                    state = _SemicolonSplitter.BLOCK_COMMENT_OPENED_CLOSE_BLOCK_COMMENT_C1
+            elif state == _SemicolonSplitter.BLOCK_COMMENT_OPENED_CLOSE_BLOCK_COMMENT_C1:
+                if c == self.__block_comment[1][1]:
+                    cur = []
+                    state = _SemicolonSplitter.NONE
+            elif state == _SemicolonSplitter.OPEN_LINE_COMMENT_C1:
+                if c == self.__line_comment[1]:
+                    state = _SemicolonSplitter.LINE_COMMENT_OPENED
+                else:
+                    state = _SemicolonSplitter.NONE
+            elif state == _SemicolonSplitter.LINE_COMMENT_OPENED:
+                if c == "\n":
+                    cur = []
+                    state = _SemicolonSplitter.NONE
+            elif state == _SemicolonSplitter.DOUBLE_QUOTED:
+                if c == "\\":
+                    state = _SemicolonSplitter.DOUBLE_QUOTED_ESCAPE
+                if c == "\"":
+                    state = _SemicolonSplitter.NONE
+            elif state == _SemicolonSplitter.DOUBLE_QUOTED_ESCAPE:
+                state = _SemicolonSplitter.DOUBLE_QUOTED;
+            elif state == _SemicolonSplitter.SINGLE_QUOTED:
+                if c == "\\":
+                    state = _SemicolonSplitter.SINGLE_QUOTED_ESCAPE
+                if c == "'":
+                    state = _SemicolonSplitter.NONE
+            elif state == _SemicolonSplitter.SINGLE_QUOTED_ESCAPE:
+                state = _SemicolonSplitter.SINGLE_QUOTED;
+
+            cur.append(c)
+
+        yield "".join(cur)
 
 if __name__ == '__main__':
     main()
