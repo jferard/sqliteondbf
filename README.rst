@@ -63,7 +63,7 @@ In a python script (see examples/examples.py):
 ----------
 The script
 ----------
-There is a mandatory blank line between instructions, but no semi colon is needed.
+There is a mandatory semicolon between instructions.
 
 SQL instructions
 ================
@@ -130,12 +130,12 @@ To use a custom python aggregate function in the script:
     $aggregate Class():
         def __init__(self):
             ...
+
         def step(self, v):
             ...
+
         def finalize(self):
             return ret
-
-Beware: do not put any blank line between methods.
 
 ``dump``
 --------
