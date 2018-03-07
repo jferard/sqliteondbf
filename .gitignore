@@ -3,6 +3,9 @@
 *.dump
 *.db
 *.egg-info
+.coverage
+.coveragerc
+.pytest_cache
 
 # dirs
 __pycache__

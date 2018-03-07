@@ -1,0 +1,22 @@
+# sqliteondbf
+language: python
+
+python:
+  - "3.4"
+
+cache: pip
+
+# command to run tests and install dependencies
+install:
+  # for coverage
+  - pip install codecov
+  - pip install pytest-cov
+  # dependencies
+  - pip install -e .
+
+# script
+script:
+  - py.test --cov
+
+after_success:
+  - codecov
