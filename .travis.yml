@@ -16,7 +16,7 @@ install:
 
 # script
 script:
-  - py.test --cov
+  - py.test --cov=sqliteondbf test
 
 after_success:
   - codecov
