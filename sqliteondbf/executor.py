@@ -28,13 +28,13 @@ from converter import SQLiteConverter as _SQLiteConverter
 
 class SQLiteExecutor():
     """A script executor: executes a sqlite script on a dbf database"""
-    def __init__(self, script, logger):
+    def __init__(self, script, logger=logging.getLogger("sqliteondbf"), additional_instruction_by_name={}):
         if type(script) == str:
             self.__script = script
         else:
             self.__script = script.read()
         self.__logger = logger
-        self.__ex = {
+        self.__instruction_by_name = {
             "connect":self.__connect,
             "convert":self.__convert,
             "export":self.__export,
@@ -44,6 +44,7 @@ class SQLiteExecutor():
             "aggregate":self.__aggregate,
             "dump":self.__dump,
         }
+        self.__instruction_by_name.update(additional_instruction_by_name)
 
     def execute(self):
         """Execute the script"""
@@ -54,25 +55,21 @@ class SQLiteExecutor():
 
             if e.startswith("$"):
                 args = self.__get_args(e[1:]) # get arg
-                self.__ex[args[0]](e[1:], *(args[1:]))
+                self.__instruction_by_name[args[0]](e[1:], *(args[1:]))
+            elif e.startswith("/*") or e.startswith("--"):
+                self.__logger.debug("ignore:\n{}".format(e))
             else:
                 try:
                     self.__cursor
                 except:
-                    if e.startswith("/*") or e.startswith("--"):
-                        self.__logger.debug("ignore:\n{}".format(e))
-                    else:
-                        msg = "open a data source before executing instructions!! {} ignored".format(e)
-                        self.__logger.error(msg)
-                        raise Exception(msg)
+                    msg = "open a data source before executing instructions!! {} ignored".format(e)
+                    self.__logger.error(msg)
+                    raise Exception(msg)
                 else:
-                    if e.startswith("/*") or e.startswith("--"):
-                        self.__logger.debug("ignore:\n{}".format(e))
-                    else:
-                        self.__last_query, self.__cursor_fetched = e, False
-                        self.__logger.debug("execute sql:\n{}".format(e))
-                        self.__cursor.execute(e)
-                        self.__logger.debug("rowcount: {}".format(self.__cursor.rowcount))
+                    self.__last_query, self.__cursor_fetched = e, False
+                    self.__logger.debug("execute sql:\n{}".format(e))
+                    self.__cursor.execute(e)
+                    self.__logger.debug("rowcount: {}".format(self.__cursor.rowcount))
 
     def __connect(self, e, t, fpath, encoding="cp850"):
         self.__logger.info("set source to {} ({})".format(fpath, t))

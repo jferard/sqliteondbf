@@ -49,7 +49,7 @@ class SQLiteConverter():
 
 class SQLiteConverterWorker():
     """The worker: converts a dbf table and add the table to the current connection"""
-    __typemap = {
+    __TYPEMAP = {
         'F': 'FLOAT',
         'L': 'BOOLEAN',
         'I': 'INTEGER',
@@ -90,7 +90,7 @@ class SQLiteConverterWorker():
         self.__cursor.execute(sql)
 
     def __field_type(self, f):
-        return SQLiteConverterWorker.__typemap.get(f.type, 'TEXT')
+        return SQLiteConverterWorker.__TYPEMAP.get(f.type, 'TEXT')
 
     def __populate_table(self):
         placeholders = ", ".join(["?"]*len(self.__dbf_table.fields))
