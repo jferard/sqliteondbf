@@ -13,6 +13,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
    """
+import io
 
 class Splitter():
     """A splitter: splits a script into separate chunks. By default, the
@@ -39,9 +40,16 @@ class Splitter():
         self.__splitter = splitter
 
     def split(self, script):
+        if type(script) == str:
+            script = io.StringIO(script)
+
         cur_chunk = []
         state = Splitter.__NONE
-        for c in script:
+        while True:
+            c = script.read(1)
+            if not c:
+                break
+
             if state == Splitter.__NONE:
                 if c == self.__block_comment[0][0]:
                     state = Splitter.__OPEN_BLOCK_COMMENT_C1

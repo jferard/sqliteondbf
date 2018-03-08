@@ -22,6 +22,7 @@ import logging
 import sqlite3
 import csv
 import sys
+import io
 
 from splitter import Splitter as _Splitter
 from converter import SQLiteConverter as _SQLiteConverter
@@ -30,9 +31,9 @@ class SQLiteExecutor():
     """A script executor: executes a sqlite script on a dbf database"""
     def __init__(self, script, logger=logging.getLogger("sqliteondbf"), additional_instruction_by_name={}):
         if type(script) == str:
-            self.__script = script
+            self.__script = io.StringIO(script)
         else:
-            self.__script = script.read()
+            self.__script = script
         self.__logger = logger
         self.__instruction_by_name = {
             "connect":self.__connect,
