@@ -14,7 +14,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
    """
 
-class SemicolonSplitter():
+class Splitter():
+    """A splitter: splits a script into separate chunks. By default, the
+    separator is the semicolon. Ignores separators in comments or strings"""
     __NONE = 0
 
     __OPEN_BLOCK_COMMENT_C1 = 10
@@ -38,60 +40,60 @@ class SemicolonSplitter():
 
     def split(self, script):
         cur_chunk = []
-        state = SemicolonSplitter.__NONE
+        state = Splitter.__NONE
         for c in script:
-            if state == SemicolonSplitter.__NONE:
+            if state == Splitter.__NONE:
                 if c == self.__block_comment[0][0]:
-                    state = SemicolonSplitter.__OPEN_BLOCK_COMMENT_C1
+                    state = Splitter.__OPEN_BLOCK_COMMENT_C1
                 elif c == self.__line_comment[0]:
-                    state = SemicolonSplitter.__OPEN_LINE_COMMENT_C1
+                    state = Splitter.__OPEN_LINE_COMMENT_C1
                 elif c == "\"":
-                    state = SemicolonSplitter.__DOUBLE_QUOTED
+                    state = Splitter.__DOUBLE_QUOTED
                 elif c == "'":
-                    state = SemicolonSplitter.__SINGLE_QUOTED
+                    state = Splitter.__SINGLE_QUOTED
                 elif c == self.__splitter:
                     chunk = "".join(cur_chunk).strip()
                     if chunk:
                         yield chunk
                     cur_chunk = []
                     continue
-            elif state == SemicolonSplitter.__OPEN_BLOCK_COMMENT_C1:
+            elif state == Splitter.__OPEN_BLOCK_COMMENT_C1:
                 if c == self.__block_comment[0][1]:
-                    state = SemicolonSplitter.__BLOCK_COMMENT_OPENED
+                    state = Splitter.__BLOCK_COMMENT_OPENED
                 else:
-                    state = SemicolonSplitter.__NONE
-            elif state == SemicolonSplitter.__BLOCK_COMMENT_OPENED:
+                    state = Splitter.__NONE
+            elif state == Splitter.__BLOCK_COMMENT_OPENED:
                 if c == self.__block_comment[1][0]:
-                    state = SemicolonSplitter.__BLOCK_COMMENT_OPENED_CLOSE_BLOCK_COMMENT_C1
-            elif state == SemicolonSplitter.__BLOCK_COMMENT_OPENED_CLOSE_BLOCK_COMMENT_C1:
+                    state = Splitter.__BLOCK_COMMENT_OPENED_CLOSE_BLOCK_COMMENT_C1
+            elif state == Splitter.__BLOCK_COMMENT_OPENED_CLOSE_BLOCK_COMMENT_C1:
                 if c == self.__block_comment[1][1]:
                     cur_chunk = []
-                    state = SemicolonSplitter.__NONE
+                    state = Splitter.__NONE
                     continue
-            elif state == SemicolonSplitter.__OPEN_LINE_COMMENT_C1:
+            elif state == Splitter.__OPEN_LINE_COMMENT_C1:
                 if c == self.__line_comment[1]:
-                    state = SemicolonSplitter.__LINE_COMMENT_OPENED
+                    state = Splitter.__LINE_COMMENT_OPENED
                 else:
-                    state = SemicolonSplitter.__NONE
-            elif state == SemicolonSplitter.__LINE_COMMENT_OPENED:
+                    state = Splitter.__NONE
+            elif state == Splitter.__LINE_COMMENT_OPENED:
                 if c == "\n":
                     cur_chunk = []
-                    state = SemicolonSplitter.__NONE
+                    state = Splitter.__NONE
                     continue
-            elif state == SemicolonSplitter.__DOUBLE_QUOTED:
+            elif state == Splitter.__DOUBLE_QUOTED:
                 if c == "\\":
-                    state = SemicolonSplitter.__DOUBLE_QUOTED_ESCAPE
+                    state = Splitter.__DOUBLE_QUOTED_ESCAPE
                 if c == "\"":
-                    state = SemicolonSplitter.__NONE
-            elif state == SemicolonSplitter.__DOUBLE_QUOTED_ESCAPE:
-                state = SemicolonSplitter.__DOUBLE_QUOTED;
-            elif state == SemicolonSplitter.__SINGLE_QUOTED:
+                    state = Splitter.__NONE
+            elif state == Splitter.__DOUBLE_QUOTED_ESCAPE:
+                state = Splitter.__DOUBLE_QUOTED;
+            elif state == Splitter.__SINGLE_QUOTED:
                 if c == "\\":
-                    state = SemicolonSplitter.__SINGLE_QUOTED_ESCAPE
+                    state = Splitter.__SINGLE_QUOTED_ESCAPE
                 if c == "'":
-                    state = SemicolonSplitter.__NONE
-            elif state == SemicolonSplitter.__SINGLE_QUOTED_ESCAPE:
-                state = SemicolonSplitter.__SINGLE_QUOTED;
+                    state = Splitter.__NONE
+            elif state == Splitter.__SINGLE_QUOTED_ESCAPE:
+                state = Splitter.__SINGLE_QUOTED;
 
             cur_chunk.append(c)
 

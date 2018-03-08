@@ -18,7 +18,7 @@ sys.path.insert(0, "..")
 import sqliteondbf.splitter as sp
 import unittest
 
-class SemicolonSplitterTest(unittest.TestCase):
+class SplitterTest(unittest.TestCase):
     def test(self):
         text="""
         a semicolon "in a double quoted (\\") string;" is not a separation
@@ -32,7 +32,7 @@ class SemicolonSplitterTest(unittest.TestCase):
         this is one;
         """
 
-        l = list(sp.SemicolonSplitter().split(text))
+        l = list(sp.Splitter().split(text))
         self.assertEquals(
             ['a semicolon "in a double quoted (\\") string;" is not a separation\n        this is one',
             "a semicolon 'in a single quoted (\\') string;' is not a separation\n        this is one",

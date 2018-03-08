@@ -23,10 +23,11 @@ import sqlite3
 import csv
 import sys
 
-from splitter import SemicolonSplitter as _SemicolonSplitter
+from splitter import Splitter as _Splitter
 from converter import SQLiteConverter as _SQLiteConverter
 
 class SQLiteExecutor():
+    """A script executor: executes a sqlite script on a dbf database"""
     def __init__(self, script, logger):
         if type(script) == str:
             self.__script = script
@@ -45,7 +46,8 @@ class SQLiteExecutor():
         }
 
     def execute(self):
-        for e in _SemicolonSplitter().split(self.__script):
+        """Execute the script"""
+        for e in _Splitter().split(self.__script):
             e = e.strip()
             if not e:
                 continue
@@ -146,15 +148,18 @@ class SQLiteExecutor():
         return shlex.split(e)
 
 def connect(dbf_path, logger=logging.getLogger("sqliteondbf"), lowernames=True, encoding="cp850", char_decode_errors="strict"):
+    """take a dBase (= set of dbf files) directory and return a SQLite connection over the database"""
     return convert(dbf_path, ":memory:", logger=logger, lowernames=lowernames, encoding=encoding, char_decode_errors=char_decode_errors)
 
 def convert(dbf_path, sqlite_path, logger=logging.getLogger("sqliteondbf"), lowernames=True, encoding="cp850", char_decode_errors="strict"):
+    """convert a dBase (= set of dbf files) directory to a SQLite file and return a SQLite connection over the database"""
     logger.info("import {} to {}".format(dbf_path, sqlite_path))
     connection = sqlite3.connect(sqlite_path)
     _SQLiteConverter(connection, logger).import_dbf(dbf_path, encoding=encoding, lowernames=lowernames, char_decode_errors=char_decode_errors)
     return connection
 
 def export(cursor, csv_path, logger=logging.getLogger("sqliteondbf")):
+    """export the result of the last query to a csv file"""
     logger.info("export data to {}".format(csv_path))
     with open(csv_path, 'w', newline='', encoding='utf-8') as dest:
         writer = csv.writer(dest)
@@ -163,6 +168,7 @@ def export(cursor, csv_path, logger=logging.getLogger("sqliteondbf")):
             writer.writerow(row)
 
 def view(cursor, limit, logger=logging.getLogger("sqliteondbf"), file=sys.stdout):
+    """print the result of the last query"""
     logger.debug("display data on terminal")
     column_names = [description[0] for description in cursor.description]
     if limit >= 0:
@@ -175,7 +181,8 @@ def view(cursor, limit, logger=logging.getLogger("sqliteondbf"), file=sys.stdout
     if cursor.fetchone():
         print ("...", file=file)
 
-def dump(dest, connection):
-    with open(dest, 'w', encoding="utf-8", newline="\n") as f:
+def dump(sqlite_path, connection):
+    """dump the database to a SQLite file"""
+    with open(sqlite_path, 'w', encoding="utf-8", newline="\n") as f:
         for line in connection.iterdump():
             f.write(line+"\n")

@@ -24,11 +24,13 @@ import os
 import dbfread
 
 class SQLiteConverter():
+    """A converter from dbf to sqlite3"""
     def __init__(self, connection = sqlite3.connect(":memory:"), logger=logging.getLogger("sqliteondbf")):
         self.__connection = connection
         self.__logger = logger
 
     def import_dbf(self, dbf_path, lowernames=True, encoding="cp850", char_decode_errors="strict"):
+        """Import a dbf database to the current sqlite connection"""
         cursor = self.__connection.cursor()
 
         for fpath in self.__dbf_files(dbf_path):
@@ -46,6 +48,7 @@ class SQLiteConverter():
                     yield os.path.join(root, name)
 
 class SQLiteConverterWorker():
+    """The worker: converts a dbf table and add the table to the current connection"""
     __typemap = {
         'F': 'FLOAT',
         'L': 'BOOLEAN',
@@ -64,6 +67,7 @@ class SQLiteConverterWorker():
         self.__dbf_table = dbf_table
 
     def import_dbf_file(self):
+        """Import the file"""
         try:
             self.__add_sqlite_table()
         except UnicodeDecodeError as err:

@@ -24,6 +24,7 @@ import argparse
 from executor import SQLiteExecutor as _SQLiteExecutor, connect, convert, export, view, dump
 
 def execute(script, logger=logging.getLogger("sqliteondbf")):
+    """execute a sqlite3 script on a DBF base"""
     _SQLiteExecutor(script, logger).execute()
 
 def _get_args():
@@ -38,6 +39,7 @@ def _get_args():
     return parser.parse_args()
 
 def main():
+    """sqliteondbf main function"""
     args = _get_args()
     if args.quiet:
         logging.basicConfig(level=logging.ERROR)
