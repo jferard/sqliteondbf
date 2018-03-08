@@ -24,8 +24,30 @@ import csv
 import sys
 import io
 
-from splitter import Splitter as _Splitter
-from converter import SQLiteConverter as _SQLiteConverter
+from sqliteondbf.splitter import Splitter as _Splitter
+from sqliteondbf.converter import SQLiteConverter as _SQLiteConverter
+
+def query_required(func):
+    def wrapper(self, *args, **kwargs):
+        try:
+            func(self, *args, **kwargs)
+        except AttributeError:
+            msg = "run a query before trying to view or export anything!! {} ignored".format(*args)
+            self.__logger.error(msg)
+            raise Exception(msg)
+
+    return wrapper
+
+def connection_required(func):
+    def wrapper(self, *args, **kwargs):
+        try:
+            func(self, *args, **kwargs)
+        except AttributeError as e:
+            msg = "open a data source before trying to dump, def, aggregate, ... anything!! {} ignored".format(*args)
+            self.__logger.error(msg)
+            raise Exception(msg)
+
+    return wrapper
 
 class SQLiteExecutor():
     """A script executor: executes a sqlite script on a dbf database"""
@@ -63,7 +85,7 @@ class SQLiteExecutor():
                 try:
                     self.__cursor
                 except:
-                    msg = "open a data source before executing instructions!! {} ignored".format(e)
+                    msg = "open a data source before executing SQL instructions!! {} ignored".format(e)
                     self.__logger.error(msg)
                     raise Exception(msg)
                 else:
@@ -86,11 +108,13 @@ class SQLiteExecutor():
         self.__connection = convert(dbf_path, sqlite_path, logger=self.__logger, encoding=encoding)
         self.__cursor = self.__connection.cursor()
 
+    @query_required
     def __export(self, e, csv_path):
         self.__ensure_cursor()
 
         export(self.__cursor, csv_path, self.__logger)
 
+    @connection_required
     def __def(self, e, *args):
         import re
         from inspect import signature
@@ -106,6 +130,7 @@ class SQLiteExecutor():
 
         self.__connection.create_function(name, len(params), func)
 
+    @connection_required
     def __aggregate(self, e, *args):
         import re
         from inspect import signature
@@ -121,6 +146,7 @@ class SQLiteExecutor():
 
         self.__connection.create_aggregate(name, len(params)-1, clazz)
 
+    @query_required
     def __view(self, e, *args):
         self.__ensure_cursor()
 

@@ -21,7 +21,7 @@
 import logging
 import argparse
 
-from executor import SQLiteExecutor as _SQLiteExecutor, connect, convert, export, view, dump
+from sqliteondbf.executor import SQLiteExecutor as _SQLiteExecutor, connect, convert, export, view, dump
 
 def execute(script, logger=logging.getLogger("sqliteondbf")):
     """execute a sqlite3 script on a DBF base"""
