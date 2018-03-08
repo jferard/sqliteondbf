@@ -21,7 +21,7 @@
 import sqlite3
 import logging
 import os
-from dbfread import DBF
+import dbfread
 
 class SQLiteConverter():
     def __init__(self, connection = sqlite3.connect(":memory:"), logger=logging.getLogger("sqliteondbf")):
@@ -33,7 +33,7 @@ class SQLiteConverter():
 
         for fpath in self.__dbf_files(dbf_path):
             self.__logger.info("import dbf file {}".format(fpath))
-            dbf_table = DBF(fpath, lowernames=lowernames, encoding=encoding, char_decode_errors=char_decode_errors)
+            dbf_table = dbfread.DBF(fpath, lowernames=lowernames, encoding=encoding, char_decode_errors=char_decode_errors)
             SQLiteConverterWorker(self.__logger, cursor, dbf_table).import_dbf_file()
 
         self.__connection.commit()
@@ -70,14 +70,16 @@ class SQLiteConverterWorker():
             self.__logger.error("error {}".format(str(err)))
 
     def __add_sqlite_table(self):
+        self.__drop_table()
         self.__create_table()
         self.__populate_table()
 
-    def __create_table(self):
+    def __drop_table(self):
         sql = 'DROP TABLE IF EXISTS "{}"'.format(self.__dbf_table.name)
         self.__logger.debug("drop table SQL:\n{}".format(sql))
         self.__cursor.execute(sql)
 
+    def __create_table(self):
         fields = ['"{}" {}'.format(f.name, self.__field_type(f)) for f in self.__dbf_table.fields]
         sql = 'CREATE TABLE "{}" ({})'.format(self.__dbf_table.name, ', '.join(fields))
         self.__logger.debug("create table SQL:\n{}".format(sql))
@@ -87,7 +89,7 @@ class SQLiteConverterWorker():
         return SQLiteConverterWorker.__typemap.get(f.type, 'TEXT')
 
     def __populate_table(self):
-        placeholders = ", ".join(["?"]*len(self.__dbf_table.field_names))
+        placeholders = ", ".join(["?"]*len(self.__dbf_table.fields))
         sql = 'INSERT INTO "{}" VALUES ({})'.format(self.__dbf_table.name, placeholders)
         self.__logger.debug("populate table SQL:\n{}".format(sql))
 

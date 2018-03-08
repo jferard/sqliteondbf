@@ -19,6 +19,7 @@ import sqliteondbf.converter as cv
 import unittest
 from unittest.mock import *
 from itertools import zip_longest
+import dbfread
 
 class ConverterTest(unittest.TestCase):
     def setUp(self):
@@ -67,21 +68,111 @@ class ConverterTest(unittest.TestCase):
         cv.SQLiteConverterWorker(self.__logger, self.__cursor, self.__dbf_table).import_dbf_file()
 
         # verify
-        # verify cursor
-        expected = [
+        self.__verify([
             call.execute('DROP TABLE IF EXISTS "one_value_table"'),
             call.execute('CREATE TABLE "one_value_table" ("f" FLOAT)'),
             call.executemany('INSERT INTO "one_value_table" VALUES (?)', ANY),
             ANY
-        ]
-        for e, c in zip_longest(expected, self.__cursor.mock_calls):
-            self.assertEquals(e, c)
-
-        # verify logger
-        expected = [
+                ], [
             call.debug('drop table SQL:\nDROP TABLE IF EXISTS "one_value_table"'),
             call.debug('create table SQL:\nCREATE TABLE "one_value_table" ("f" FLOAT)'),
             call.debug('populate table SQL:\nINSERT INTO "one_value_table" VALUES (?)'),
-            call.debug(ANY)]
-        for e, c in zip_longest(expected, self.__logger.mock_calls):
+            call.debug(ANY)])
+
+    def test_one_value_table(self):
+        f = Mock()
+        f.type = "F"
+        f.name = "f"
+
+        self.__dbf_table.name = "one_value_table"
+        self.__dbf_table.fields = [f]
+        self.__dbf_table.field_names = ["f"]
+        self.__dbf_table.__iter__.return_value = [[1]]
+
+        # replay
+        cv.SQLiteConverterWorker(self.__logger, self.__cursor, self.__dbf_table).import_dbf_file()
+
+        # verify
+        self.__verify([
+            call.execute('DROP TABLE IF EXISTS "one_value_table"'),
+            call.execute('CREATE TABLE "one_value_table" ("f" FLOAT)'),
+            call.executemany('INSERT INTO "one_value_table" VALUES (?)', ANY),
+            ANY
+                ], [
+            call.debug('drop table SQL:\nDROP TABLE IF EXISTS "one_value_table"'),
+            call.debug('create table SQL:\nCREATE TABLE "one_value_table" ("f" FLOAT)'),
+            call.debug('populate table SQL:\nINSERT INTO "one_value_table" VALUES (?)'),
+            call.debug(ANY)
+        ])
+
+    def test_decode_error(self):
+        f = Mock()
+        f.type = "F"
+        f.name = "f"
+
+        self.__dbf_table.name = "one_value_table"
+        self.__dbf_table.fields = [f]
+        self.__dbf_table.__iter__.side_effect = UnicodeDecodeError("utf-8", bytearray(b""), 0, 1, "bad")
+
+        # replay
+        cv.SQLiteConverterWorker(self.__logger, self.__cursor, self.__dbf_table).import_dbf_file()
+
+        # verify
+        self.__verify([
+            call.execute('DROP TABLE IF EXISTS "one_value_table"'),
+            call.execute('CREATE TABLE "one_value_table" ("f" FLOAT)')
+                ], [
+            call.debug('drop table SQL:\nDROP TABLE IF EXISTS "one_value_table"'),
+            call.debug('create table SQL:\nCREATE TABLE "one_value_table" ("f" FLOAT)'),
+            call.debug('populate table SQL:\nINSERT INTO "one_value_table" VALUES (?)'),
+            call.error("error 'utf-8' codec can't decode bytes in position 0-0: bad")
+        ])
+
+    def __verify(self, expected_cursor, expected_logger):
+        self.__verify_calls(expected_cursor, self.__cursor)
+        self.__verify_calls(expected_logger, self.__logger)
+
+    def __verify_calls(self, expected, mock):
+        for e, c in zip_longest(expected, mock.mock_calls):
             self.assertEquals(e, c)
+
+    @patch("os.walk")
+    @patch("dbfread.DBF")
+    def test_converter(self, mock_DBF, mock_walk):
+        connection = Mock()
+        mock_walk.return_value = [("root", "dirs", ["dbf1.dbf"])]
+        mock_DBF().name = "dbf"
+        f1 = Mock()
+        mock_DBF().fields = [f1]
+        f1.type = "T"
+        f1.name = "f1"
+        m = Mock()
+        connection.cursor.return_value = m
+        m.rowcount = 10
+
+        # replay
+        cv.SQLiteConverter(connection, self.__logger).import_dbf("dir")
+
+        # verify
+        self.__verify_calls([
+            call("dir"),
+            ANY, # call().__iter__()
+        ], mock_walk)
+        self.assertTrue(
+            call('root/dbf1.dbf', lowernames=True, encoding="cp850", char_decode_errors="strict") in mock_DBF.mock_calls)
+        self.assertEquals(
+            "dbf", mock_DBF().name)
+        self.__verify_calls([
+            call.cursor(),
+            call.cursor().execute('DROP TABLE IF EXISTS "dbf"'),
+            call.cursor().execute('CREATE TABLE "dbf" ("f1" DATETIME)'),
+            call.cursor().executemany('INSERT INTO "dbf" VALUES (?)', ANY),
+            call.commit()
+        ], connection)
+        self.__verify_calls([
+            call.info('import dbf file root/dbf1.dbf'),
+            call.debug('drop table SQL:\nDROP TABLE IF EXISTS "dbf"'),
+            call.debug('create table SQL:\nCREATE TABLE "dbf" ("f1" DATETIME)'),
+            call.debug('populate table SQL:\nINSERT INTO "dbf" VALUES (?)'),
+            call.debug("rowcount: 10")
+        ], self.__logger)
