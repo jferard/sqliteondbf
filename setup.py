@@ -41,6 +41,11 @@ setup(
 
     keywords='sqlite dbf converter sql script dbase dbf',
     install_requires=['dbfread>=2.0.7'],
+    test_requires=[
+        'pytest',
+        'codecov',
+        'pytest-cov'
+    ],
     entry_points={
         'console_scripts': [
             'sqliteondbf=sqliteondbf:main',

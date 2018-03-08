@@ -13,14 +13,31 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
    """
+import sys
+sys.path.insert(0, "..")
+import sqliteondbf.splitter as sp
 import unittest
 
-class Dummy(unittest.TestCase):
-    def setUp(self):
-        pass
-
+class SemicolonSplitterTest(unittest.TestCase):
     def test(self):
-        self.assertTrue(True)
+        text="""
+        a semicolon "in a double quoted (\\") string;" is not a separation
+        this is one;
+        a semicolon 'in a single quoted (\\') string;' is not a separation
+        this is one;
+        -- a semicolon in a line comment is not a separation;
+        this is one;
+        /* a semicolon in a block comment
+        is not a separation; */
+        this is one;
+        """
+
+        l = list(sp.SemicolonSplitter().split(text))
+        self.assertEquals(
+            ['a semicolon "in a double quoted (\\") string;" is not a separation\n        this is one',
+            "a semicolon 'in a single quoted (\\') string;' is not a separation\n        this is one",
+            'this is one',
+            'this is one'], l)
 
 if __name__ == '__main__':
     unittest.main()

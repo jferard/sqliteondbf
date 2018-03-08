@@ -18,82 +18,13 @@
 # * A part of this tool was inspired by https://github.com/olemb/dbfread/blob/master/examples/dbf2sqlite by Ole Martin Bjørndalen / UiT The Arctic University of Norway (under MIT licence)
 # * The example files are adapted from https://www.census.gov/data/tables/2016/econ/stc/2016-annual.html (I didn't find a copyright, but this is fair use I believe)
 
-import os
 import logging
 import argparse
 import sqlite3
 import csv
 
-from dbfread import DBF
-
-class _SQLiteConverter():
-    def __init__(self, connection = sqlite3.connect(":memory:"), logger=logging.getLogger("sqliteondbf")):
-        self.__connection = connection
-        self.__logger = logger
-
-    def import_dbf(self, dbf_path, lowernames=True, encoding="cp850", char_decode_errors="strict"):
-        cursor = self.__connection.cursor()
-
-        for fpath in self.__dbf_files(dbf_path):
-            _SQLiteConverterWorker(self.__logger, cursor, fpath, lowernames, encoding, char_decode_errors).import_dbf_file()
-
-        self.__connection.commit()
-
-    def __dbf_files(self, dbf_path):
-        for root, _, names in os.walk(dbf_path):
-            for name in names:
-                lext = os.path.splitext(name)[-1].lower()
-                if lext == ".dbf":
-                    yield os.path.join(root, name)
-
-class _SQLiteConverterWorker():
-    __typemap = {
-        'F': 'FLOAT',
-        'L': 'BOOLEAN',
-        'I': 'INTEGER',
-        'C': 'TEXT',
-        'N': 'REAL',
-        'M': 'TEXT',
-        'D': 'DATE',
-        'T': 'DATETIME',
-        '0': 'INTEGER',
-    }
-
-    def __init__(self, logger, cursor, fpath, lowernames, encoding, char_decode_errors):
-        self.__logger = logger
-        self.__cursor = cursor
-        self.__fpath = fpath
-        self.__dbf_table = DBF(fpath, lowernames=lowernames, encoding=encoding, char_decode_errors=char_decode_errors)
-
-    def import_dbf_file(self):
-        self.__logger.info("import dbf file {}".format(self.__fpath))
-        try:
-            self.__add_sqlite_table()
-        except UnicodeDecodeError as err:
-            self.__logger.error("error {}".format(str(err)))
-
-    def __add_sqlite_table(self):
-        self.__create_table()
-        self.__populate_table()
-
-    def __create_table(self):
-        sql = 'DROP TABLE IF EXISTS "{}"'.format(self.__dbf_table.name)
-        self.__logger.debug("drop table SQL:\n{}".format(sql))
-        self.__cursor.execute(sql)
-        fields = ['"{}" {}'.format(f.name, self.__field_type(f)) for f in self.__dbf_table.fields]
-        sql = 'CREATE TABLE "{}" ({})'.format(self.__dbf_table.name, ', '.join(fields))
-        self.__logger.debug("create table SQL:\n{}".format(sql))
-        self.__cursor.execute(sql)
-
-    def __field_type(self, f):
-        return _SQLiteConverterWorker.__typemap.get(f.type, 'TEXT')
-
-    def __populate_table(self):
-        values = (list(rec.values()) for rec in self.__dbf_table)
-        sql = 'INSERT INTO "{}" VALUES ({})'.format(self.__dbf_table.name, ",".join(["?"]*len(self.__dbf_table.field_names)))
-        self.__logger.debug("populate table SQL:\n{}".format(sql))
-        self.__cursor.executemany(sql, values)
-        self.__logger.debug("rowcount: {}".format(self.__cursor.rowcount))
+from splitter import SemicolonSplitter as _SemicolonSplitter
+from converter import SQLiteConverter as _SQLiteConverter
 
 class _SQLiteExecutor():
     def __init__(self, script, logger):
@@ -279,85 +210,6 @@ def view(cursor, limit, logger=logging.getLogger("sqliteondbf")):
         print ("\t".join([str(z).rjust(w) if type(z) in (int, float) else str(z).ljust(w) for z, w in zip(zs, ws)]))
     if cursor.fetchone():
         print ("...")
-
-class _SemicolonSplitter():
-    NONE = 0
-
-    OPEN_BLOCK_COMMENT_C1 = 10
-    BLOCK_COMMENT_OPENED = 11
-    BLOCK_COMMENT_OPENED_CLOSE_BLOCK_COMMENT_C1 = 12
-
-    OPEN_LINE_COMMENT_C1 = 20
-    OPEN_LINE_COMMENT_C1 = 21
-    LINE_COMMENT_OPENED = 22
-
-    DOUBLE_QUOTED = 30
-    DOUBLE_QUOTED_ESCAPE = 31
-
-    SINGLE_QUOTED = 40
-    SINGLE_QUOTED_ESCAPE = 41
-
-    def __init__(self, block_comment=("/*", "*/"), line_comment="--", splitter=";"):
-        self.__block_comment = block_comment
-        self.__line_comment = line_comment
-        self.__splitter = splitter
-
-    def split(self, script):
-        cur = []
-        state = _SemicolonSplitter.NONE
-        for c in script:
-            if state == _SemicolonSplitter.NONE:
-                if c == self.__block_comment[0][0]:
-                    state = _SemicolonSplitter.OPEN_BLOCK_COMMENT_C1
-                elif c == self.__line_comment[0]:
-                    state = _SemicolonSplitter.OPEN_LINE_COMMENT_C1
-                elif c == "\"":
-                    state = _SemicolonSplitter.DOUBLE_QUOTED
-                elif c == "'":
-                    state = _SemicolonSplitter.SINGLE_QUOTED
-                elif c == self.__splitter:
-                    yield "".join(cur)
-                    cur = []
-                    continue
-            elif state == _SemicolonSplitter.OPEN_BLOCK_COMMENT_C1:
-                if c == self.__block_comment[0][1]:
-                    state = _SemicolonSplitter.BLOCK_COMMENT_OPENED
-                else:
-                    state = _SemicolonSplitter.NONE
-            elif state == _SemicolonSplitter.BLOCK_COMMENT_OPENED:
-                if c == self.__block_comment[1][0]:
-                    state = _SemicolonSplitter.BLOCK_COMMENT_OPENED_CLOSE_BLOCK_COMMENT_C1
-            elif state == _SemicolonSplitter.BLOCK_COMMENT_OPENED_CLOSE_BLOCK_COMMENT_C1:
-                if c == self.__block_comment[1][1]:
-                    cur = []
-                    state = _SemicolonSplitter.NONE
-            elif state == _SemicolonSplitter.OPEN_LINE_COMMENT_C1:
-                if c == self.__line_comment[1]:
-                    state = _SemicolonSplitter.LINE_COMMENT_OPENED
-                else:
-                    state = _SemicolonSplitter.NONE
-            elif state == _SemicolonSplitter.LINE_COMMENT_OPENED:
-                if c == "\n":
-                    cur = []
-                    state = _SemicolonSplitter.NONE
-            elif state == _SemicolonSplitter.DOUBLE_QUOTED:
-                if c == "\\":
-                    state = _SemicolonSplitter.DOUBLE_QUOTED_ESCAPE
-                if c == "\"":
-                    state = _SemicolonSplitter.NONE
-            elif state == _SemicolonSplitter.DOUBLE_QUOTED_ESCAPE:
-                state = _SemicolonSplitter.DOUBLE_QUOTED;
-            elif state == _SemicolonSplitter.SINGLE_QUOTED:
-                if c == "\\":
-                    state = _SemicolonSplitter.SINGLE_QUOTED_ESCAPE
-                if c == "'":
-                    state = _SemicolonSplitter.NONE
-            elif state == _SemicolonSplitter.SINGLE_QUOTED_ESCAPE:
-                state = _SemicolonSplitter.SINGLE_QUOTED;
-
-            cur.append(c)
-
-        yield "".join(cur)
 
 if __name__ == '__main__':
     main()
