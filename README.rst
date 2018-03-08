@@ -2,6 +2,11 @@
 sqliteondbf - SQLite on DBF
 ===========================
 
+.. image:: https://travis-ci.org/jferard/sqliteondbf.svg?branch=master
+    :target: https://travis-ci.org/jferard/sqliteondbf
+.. image:: https://codecov.io/gh/jferard/sqliteondbf/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/jferard/sqliteondbf
+
 Copyright (C) J. Férard 2018
 
 SQLite on DBF is a very simple tool that allows to get a sqlite3 connection or to process a SQL script (sqlite flavour) on a set of dBase tables (dbf files).
