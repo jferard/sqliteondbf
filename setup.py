@@ -31,6 +31,11 @@ setup(
     author='Julien Férard',
     license='GPLv3',
 
+    package_dir={'sqliteondbf': 'sqliteondbf'},
+    packages = ['sqliteondbf'],
+    include_package_data=True,
+    zip_safe=True,
+
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
@@ -41,14 +46,14 @@ setup(
 
     keywords='sqlite dbf converter sql script dbase dbf',
     install_requires=['dbfread>=2.0.7'],
-    test_requires=[
+    tests_require=[
         'pytest',
         'codecov',
         'pytest-cov'
     ],
     entry_points={
         'console_scripts': [
-            'sqliteondbf=sqliteondbf:main',
+            'sqliteondbf=sqliteondbf.__main__:main',
         ],
     },
     python_requires='>=3',

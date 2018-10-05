@@ -1,12 +1,14 @@
+.coverage
 *.pyc
 *.csv
 *.dump
 *.db
-*.egg-info
-.coverage
 .coveragerc
-.pytest_cache
 
 # dirs
 __pycache__
+.idea
+.pytest_cache
+build
 dist
+*.egg-info

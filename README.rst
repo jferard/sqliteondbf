@@ -31,23 +31,29 @@ Example
 -------
 As a script processor
 =====================
-In the ``sqliteondbf`` directory:
+After the installation:
 
 .. code:: bash
 
-    python sqliteondbf.py -v examples/example.sql
+    python -m sqliteondbf -v examples/example.sql
+
+Or
+
+.. code:: bash
+
+    sqliteondbf -v examples/example.sql
 
 It's also possible to execute an inline command (see below for the ``$convert`` command):
 
 .. code:: bash
 
-    python sqliteondbf.py -e "$convert 'examples' example.db 'utf-8'"
+    python -m sqliteondbf -e "$convert 'examples' example.db 'utf-8'"
 
 On Linux, please escape the ``$`` sign:
 
 .. code:: bash
 
-    python sqliteondbf.py -e "\$convert 'examples' example.db 'utf-8'"
+    python -m sqliteondbf -e "\$convert 'examples' example.db 'utf-8'"
 
 This will convert all the dbf files in the ``examples`` directory and subdirectories into a sqlite3 databas names ``example.db``.
 
