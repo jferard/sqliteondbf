@@ -18,27 +18,44 @@
 # * A part of this tool was inspired by https://github.com/olemb/dbfread/blob/master/examples/dbf2sqlite by Ole Martin Bjørndalen / UiT The Arctic University of Norway (under MIT licence)
 # * The example files are adapted from https://www.census.gov/data/tables/2016/econ/stc/2016-annual.html (I didn't find a copyright, but this is fair use I believe)
 
-import sqlite3
+import dbfread
 import logging
 import os
-import dbfread
+import sqlite3
+
 
 class SQLiteConverter():
     """A converter from dbf to sqlite3"""
-    def __init__(self, connection = sqlite3.connect(":memory:"), logger=logging.getLogger("sqliteondbf")):
+
+    def __init__(self, connection=sqlite3.connect(":memory:"),
+                 logger=logging.getLogger("sqliteondbf")):
         self.__connection = connection
         self.__logger = logger
 
     def import_dbf(self, dbf_path, lowernames=True, encoding="cp850", char_decode_errors="strict"):
         """Import a dbf database to the current sqlite connection"""
+        self.__check_path(dbf_path)
         cursor = self.__connection.cursor()
 
+        file_count = 0
         for fpath in self.__dbf_files(dbf_path):
-            self.__logger.info("import dbf file {}".format(fpath))
-            dbf_table = dbfread.DBF(fpath, lowernames=lowernames, encoding=encoding, char_decode_errors=char_decode_errors)
+            file_count += 1
+            self.__logger.info("import dbf file #{}: {}".format(file_count, fpath))
+            dbf_table = dbfread.DBF(fpath, lowernames=lowernames, encoding=encoding,
+                                char_decode_errors=char_decode_errors)
             SQLiteConverterWorker(self.__logger, cursor, dbf_table).import_dbf_file()
 
-        self.__connection.commit()
+        if file_count:
+            self.__logger.info("{} file(s) imported".format(file_count))
+            self.__connection.commit()
+        else:
+            message = "no dbf file in {}".format(dbf_path)
+            self.__logger.warning(message)
+
+    def __check_path(self, dbf_path):
+        if not os.path.isdir(dbf_path):
+            raise Exception("{} is not a directory".format(dbf_path))
+
 
     def __dbf_files(self, dbf_path):
         for root, _, names in os.walk(dbf_path):
@@ -46,6 +63,7 @@ class SQLiteConverter():
                 lext = os.path.splitext(name)[-1].lower()
                 if lext == ".dbf":
                     yield os.path.join(root, name)
+
 
 class SQLiteConverterWorker():
     """The worker: converts a dbf table and add the table to the current connection"""
@@ -93,7 +111,7 @@ class SQLiteConverterWorker():
         return SQLiteConverterWorker.__TYPEMAP.get(f.type, 'TEXT')
 
     def __populate_table(self):
-        placeholders = ", ".join(["?"]*len(self.__dbf_table.fields))
+        placeholders = ", ".join(["?"] * len(self.__dbf_table.fields))
         sql = 'INSERT INTO "{}" VALUES ({})'.format(self.__dbf_table.name, placeholders)
         self.__logger.debug("populate table SQL:\n{}".format(sql))
 

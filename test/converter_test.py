@@ -135,9 +135,11 @@ class ConverterTest(unittest.TestCase):
             self.assertEquals(e, c)
 
     @patch("os.walk")
+    @patch("os.path.isdir")
     @patch("dbfread.DBF")
-    def test_converter(self, mock_DBF, mock_walk):
+    def test_converter(self, mock_DBF, mock_isdir, mock_walk):
         connection = Mock()
+        mock_isdir.return_value = True
         mock_walk.return_value = [("root", "dirs", ["dbf1.dbf"])]
         mock_DBF().name = "dbf"
         f1 = Mock()
@@ -154,7 +156,6 @@ class ConverterTest(unittest.TestCase):
         # verify
         self.__verify_calls([
             call("dir"),
-            ANY, # call().__iter__()
         ], mock_walk)
         self.assertTrue(
             call('root/dbf1.dbf', lowernames=True, encoding="cp850", char_decode_errors="strict") in mock_DBF.mock_calls)
@@ -168,9 +169,53 @@ class ConverterTest(unittest.TestCase):
             call.commit()
         ], connection)
         self.__verify_calls([
-            call.info('import dbf file root/dbf1.dbf'),
+            call.info('import dbf file #1: root/dbf1.dbf'),
             call.debug('drop table SQL:\nDROP TABLE IF EXISTS "dbf"'),
             call.debug('create table SQL:\nCREATE TABLE "dbf" ("f1" DATETIME)'),
             call.debug('populate table SQL:\nINSERT INTO "dbf" VALUES (?)'),
-            call.debug("rowcount: 10")
+            call.debug("rowcount: 10"),
+            call.info('1 file(s) imported'),
+        ], self.__logger)
+
+    @patch("os.path.isdir")
+    @patch("dbfread.DBF")
+    def test_converter_non_existing_dir(self, mock_DBF, mock_isdir):
+        connection = Mock()
+        mock_isdir.return_value = False
+
+        # replay
+
+        self.assertRaises(Exception, cv.SQLiteConverter(connection, self.__logger).import_dbf, "dir")
+
+
+    @patch("os.walk")
+    @patch("os.path.isdir")
+    @patch("dbfread.DBF")
+    def test_converter_empty_dir(self, mock_DBF, mock_isdir, mock_walk):
+        connection = Mock()
+        mock_isdir.return_value = True
+        mock_walk.return_value = [("root", "dirs", [])]
+        mock_DBF().name = "dbf"
+        f1 = Mock()
+        mock_DBF().fields = [f1]
+        f1.type = "T"
+        f1.name = "f1"
+        m = Mock()
+        connection.cursor.return_value = m
+        m.rowcount = 10
+
+        # replay
+        cv.SQLiteConverter(connection, self.__logger).import_dbf("dir")
+
+        # verify
+        self.__verify_calls([
+            call("dir"),
+        ], mock_walk)
+        self.assertEquals(
+            "dbf", mock_DBF().name)
+        self.__verify_calls([
+            call.cursor(),
+        ], connection)
+        self.__verify_calls([
+            call.warning('no dbf file in dir'),
         ], self.__logger)
